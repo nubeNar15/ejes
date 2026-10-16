@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pizarra colaborativa · IA en Educación</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Fraunces:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#243126;--green:#317c31;--red:#cf2822;--line:#262c26;--cream:#f8f7f0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;line-height:1.5}
+.shell{max-width:1440px;margin:auto;padding:clamp(18px,3vw,44px)}
+.eyebrow{display:inline-block;background:#e6eee1;color:var(--green);font-size:12px;padding:4px 12px;border-radius:20px;font-weight:700;letter-spacing:.04em}
+h1{font-family:Fraunces,Georgia,serif;font-size:clamp(26px,4vw,34px);margin:12px 0 8px;line-height:1.15}
+.intro{margin:0 0 22px;max-width:60ch;color:#51604f}
+.id{background:#eaf0e5;border-radius:12px;padding:18px 20px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-bottom:12px}
+.id div{flex:1 1 260px}.id p{margin:0;font-size:14px;color:#51604f;flex:1 1 260px}
+label{display:block;font-weight:700;margin-bottom:6px}
+.f{width:100%;border:1.5px solid #a7b7a5;background:#fff;border-radius:7px;padding:11px 12px;font:inherit;color:var(--ink)}
+textarea.f{min-height:104px;resize:vertical}
+.f:focus,button:focus-visible{outline:3px solid #e6a746;outline-offset:2px}
+.st{display:flex;flex-wrap:wrap;gap:12px;align-items:center;min-height:1.6em;margin-bottom:10px;font-weight:600;font-size:14px}
+#msg{color:var(--green)}#msg.err{color:#aa2822}
+#on{font-weight:700;font-size:13px;padding:3px 10px;border-radius:20px;background:#e6eee1;color:var(--green)}
+#on.off{background:#fde8e6;color:#aa2822}
+#demo{display:none;background:#fff4d6;border:1px solid #e6a746;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:2px solid var(--line);background:#fff}
+.ax+.ax{border-left:2px solid var(--line)}
+.hd{min-height:170px;padding:24px 18px;text-align:center;border-bottom:2px solid var(--line);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}
+.hd h2{margin:0;color:var(--green);font-size:21px;font-weight:800;line-height:1.2}
+.hd .q{margin:0;font-style:italic;font-weight:800;font-size:18px}
+.hd .c{margin:0;color:var(--red);font-weight:800;font-size:14px;letter-spacing:.035em}
+.bd{padding:20px;display:flex;flex-direction:column;gap:18px}
+.pub{width:100%;margin-top:10px;background:var(--green);color:#fff;border:0;border-radius:7px;padding:11px 16px;font:inherit;font-weight:800;cursor:pointer;transition:transform .15s,filter .15s}
+.pub:not(:disabled):hover{transform:translateY(-2px);filter:brightness(.92)}
+.pub:disabled{opacity:.55;cursor:wait}
+h3{margin:0 0 10px;font-size:18px}
+.list{display:flex;flex-direction:column;gap:11px}
+.empty{color:#637060;margin:0}
+.card{border:1px solid #d9dfd3;border-left:4px solid var(--green);border-radius:9px;padding:12px 14px;overflow-wrap:anywhere}
+.card.new{animation:pop .6s both}
+@keyframes pop{from{opacity:0;transform:translateY(-14px);background:#fff3c8}to{opacity:1;transform:none}}
+.who{font-weight:700;display:flex;justify-content:space-between;gap:8px}.who small{font-weight:400;color:#637060}
+.card p{margin:6px 0 0;white-space:pre-wrap}
+.row{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.sm{border:1px solid #b8c9b2;background:#fff;border-radius:6px;padding:5px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink)}
+.sm.d{color:#a62b26;border-color:#e8b9b5}
+footer p{font-size:13px;color:#637060;margin-top:18px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.ax+.ax{border-left:0;border-top:2px solid var(--line)}.hd{min-height:0}}
+@media(prefers-reduced-motion:reduce){.card.new{animation:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header>
+<span class="eyebrow">PIZARRA COLABORATIVA · IA EN EDUCACIÓN</span>
+<h1>Tres ejes para pensar juntos</h1>
+<p class="intro">Escribe tu nombre, redacta tu idea en el eje correspondiente y publícala. Los aportes de todos aparecen en pantalla en tiempo real.</p>
+</header>
+<div class="id"><div><label for="author">Tu nombre o identificador</label><input id="author" class="f" maxlength="40" autocomplete="nickname" placeholder="Ej.: Ana o Equipo 3"></div>
+<p>Se recordará en este navegador. Solo podrás editar o eliminar los aportes que publiques desde este mismo dispositivo.</p></div>
+<div id="demo"><b>Modo de prueba.</b> Falta conectar la base de datos: por ahora los aportes solo se ven en este navegador. Consulta la configuración al inicio del código (FIREBASE_URL).</div>
+<div class="st"><span id="on" class="off">Conectando…</span><span id="msg" role="status" aria-live="polite"></span></div>
+<main><section class="grid" id="grid" aria-label="Tres ejes de colaboración"></section></main>
+<footer><p>El identificador no es una cuenta segura. Evita datos personales y publica con respeto.</p></footer>
+</div>
+<script>
+/* ===== CONFIGURACIÓN =====
+   Pega aquí la URL de tu Firebase Realtime Database, por ejemplo:
+   "https://mi-proyecto-default-rtdb.firebaseio.com"
+   Si la dejas vacía, la pizarra funciona en modo de prueba (solo en este navegador). */
+var FIREBASE_URL = "https://pizarraiagen-default-rtdb.firebaseio.com/";
+
+var AX=[
+{id:"pedagogico",t:"Eje 1: Potencial Pedagógico",q:"¿Qué esperamos?",c:"SABER / HACER",ph:"Comparte una oportunidad pedagógica…"},
+{id:"riesgos",t:"Eje 2: Temores y Riesgos",q:"¿Qué nos preocupa?",c:"RIESGOS DE ALUCINACIONES Y SESGOS",ph:"Comparte un riesgo o preocupación…"},
+{id:"etica",t:"Eje 3: Compromisos Éticos",q:"¿Qué reglas asumimos?",c:"SER / DECIDIR",ph:"Propón una regla o compromiso…"}];
+var DB=FIREBASE_URL.replace(/\/+$/,""),LIVE=!!DB;
+function $(s,r){return (r||document).querySelector(s)}
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+var UID=lsGet("pz-uid");if(!UID){UID=Math.random().toString(36).slice(2)+Date.now().toString(36);lsSet("pz-uid",UID)}
+var author=$("#author");author.value=lsGet("pz-name")||"";
+author.addEventListener("change",function(){lsSet("pz-name",author.value.trim())});
+
+/* ===== Almacenamiento: Firebase (compartido) o local (prueba) ===== */
+function ok(r){if(!r.ok)throw new Error("http "+r.status);return r}
+var api=LIVE?{
+ list:function(){return fetch(DB+"/posts.json").then(ok).then(function(r){return r.json()})},
+ add:function(o){return fetch(DB+"/posts.json",{method:"POST",body:JSON.stringify(o)}).then(ok)},
+ upd:function(k,c){return fetch(DB+"/posts/"+k+".json",{method:"PATCH",body:JSON.stringify({content:c})}).then(ok)},
+ del:function(k){return fetch(DB+"/posts/"+k+".json",{method:"DELETE"}).then(ok)}
+}:(function(){
+ function rd(){try{return JSON.parse(lsGet("pz-demo")||"{}")}catch(e){return{}}}
+ function wr(d){lsSet("pz-demo",JSON.stringify(d))}
+ return{list:function(){return Promise.resolve(rd())},
+ add:function(o){var d=rd();d["k"+Date.now().toString(36)+Math.random().toString(36).slice(2,5)]=o;wr(d);return Promise.resolve()},
+ upd:function(k,c){var d=rd();if(d[k])d[k].content=c;wr(d);return Promise.resolve()},
+ del:function(k){var d=rd();delete d[k];wr(d);return Promise.resolve()}}})();
+
+var recs=[],seen={},first=true,editing=0,pending=false,timer=null;
+function say(m,err){var s=$("#msg");s.textContent=m;s.className=err?"err":"";if(m)setTimeout(function(){if(s.textContent===m)s.textContent=""},4000)}
+function online(v){var o=$("#on");o.textContent=LIVE?(v?"● En línea":"Sin conexión"):"Modo de prueba";o.className=(LIVE&&!v)?"off":""}
+function load(){return api.list().then(function(d){
+ recs=Object.keys(d||{}).map(function(k){var r=d[k]||{};r.key=k;return r});online(true);render()
+}).catch(function(){online(false)})}
+function soon(){clearTimeout(timer);timer=setTimeout(load,150)}
+
+/* ===== Interfaz ===== */
+var grid=$("#grid");
+AX.forEach(function(a){
+ var ax=el("article","ax"),hd=el("header","hd");
+ hd.appendChild(el("h2","",a.t));hd.appendChild(el("p","q",a.q));hd.appendChild(el("p","c",a.c));
+ var bd=el("div","bd"),form=el("form"),lb=el("label","","Tu aporte"),ta=el("textarea","f");
+ ta.id="t-"+a.id;lb.htmlFor=ta.id;ta.maxLength=1200;ta.required=true;ta.placeholder=a.ph;
+ var bt=el("button","pub","Publicar aporte");bt.type="submit";
+ form.appendChild(lb);form.appendChild(ta);form.appendChild(bt);
+ var box=el("div");box.appendChild(el("h3","","Aportes publicados"));
+ var em=el("p","empty","Aún no hay aportes. ¡Inicia la conversación!");em.id="e-"+a.id;
+ var ls=el("div","list");ls.id="l-"+a.id;ls.setAttribute("aria-live","polite");
+ box.appendChild(em);box.appendChild(ls);bd.appendChild(form);bd.appendChild(box);
+ ax.appendChild(hd);ax.appendChild(bd);grid.appendChild(ax);
+ form.addEventListener("submit",function(e){e.preventDefault();
+  var name=author.value.trim(),text=ta.value.trim();
+  if(!name){say("Escribe tu identificador antes de publicar.",true);author.focus();return}
+  if(!text)return;
+  if(recs.length>=999){say("La pizarra alcanzó el límite de 999 aportes.",true);return}
+  lsSet("pz-name",name);bt.disabled=true;
+  api.add({axis:a.id,content:text,author:name,uid:UID,created_at:new Date().toISOString()})
+   .then(function(){ta.value="";say("Tu aporte se publicó.");return load()})
+   .catch(function(){say("No se pudo publicar. Tu texto sigue aquí; inténtalo de nuevo.",true)})
+   .then(function(){bt.disabled=false})})});
+
+function done(){editing--;if(editing<=0){editing=0;if(pending){pending=false;render()}}}
+function card(r){
+ var c=el("article","card"+(!first&&!seen[r.key]?" new":""));
+ var w=el("div","who");w.appendChild(el("span","",r.author||"Anónimo"));
+ if(r.created_at)w.appendChild(el("small","",new Date(r.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})));
+ c.appendChild(w);var p=el("p","",r.content||"");c.appendChild(p);
+ if(r.uid===UID){
+  var row=el("div","row"),eb=el("button","sm","Editar"),db=el("button","sm d","Eliminar");eb.type=db.type="button";
+  row.appendChild(eb);row.appendChild(db);c.appendChild(row);
+  eb.onclick=function(){editing++;row.style.display="none";p.style.display="none";
+   var ta=el("textarea","f");ta.value=r.content;ta.maxLength=1200;ta.setAttribute("aria-label","Editar aporte");
+   var r2=el("div","row"),sv=el("button","sm","Guardar"),cn=el("button","sm","Cancelar");sv.type=cn.type="button";
+   r2.appendChild(sv);r2.appendChild(cn);c.appendChild(ta);c.appendChild(r2);ta.focus();
+   function close(){ta.remove();r2.remove();row.style.display="";p.style.display="";done()}
+   cn.onclick=close;
+   sv.onclick=function(){var v=ta.value.trim();if(!v)return;sv.disabled=true;
+    api.upd(r.key,v).then(function(){say("Aporte actualizado.");r.content=v;p.textContent=v;close();load()})
+     .catch(function(){say("No se pudo guardar el cambio.",true);sv.disabled=false})}};
+  db.onclick=function(){editing++;row.style.display="none";
+   var r3=el("div","row");r3.appendChild(el("span","","¿Eliminar este aporte?"));
+   var y=el("button","sm d","Sí, eliminar"),n=el("button","sm","Cancelar");y.type=n.type="button";
+   r3.appendChild(y);r3.appendChild(n);c.appendChild(r3);
+   n.onclick=function(){r3.remove();row.style.display="";done()};
+   y.onclick=function(){y.disabled=true;api.del(r.key).then(function(){say("Aporte eliminado.");editing=0;pending=false;return load()})
+    .catch(function(){say("No se pudo eliminar.",true);y.disabled=false})}}}
+ return c}
+function render(){
+ if(editing){pending=true;return}
+ AX.forEach(function(a){
+  var ls=$("#l-"+a.id),items=recs.filter(function(r){return r.axis===a.id})
+   .sort(function(x,y){return (y.created_at||"").localeCompare(x.created_at||"")});
+  ls.textContent="";items.forEach(function(r){ls.appendChild(card(r))});
+  $("#e-"+a.id).style.display=items.length?"none":""});
+ recs.forEach(function(r){seen[r.key]=1});first=false}
+
+/* ===== Tiempo real ===== */
+online(false);
+if(!LIVE){$("#demo").style.display="block";window.addEventListener("storage",soon)}
+else if(window.EventSource){
+ var es=new EventSource(DB+"/posts.json");
+ es.addEventListener("put",soon);es.addEventListener("patch",soon);
+ es.onopen=function(){online(true)};es.onerror=function(){online(false)}}
+setInterval(load,LIVE?8000:3000);
+load();
+</script>
+</body>
+</html>
